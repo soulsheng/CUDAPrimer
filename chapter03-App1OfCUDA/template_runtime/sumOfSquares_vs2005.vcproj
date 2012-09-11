@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="template_runtime"
+	Name="sumOfSquares"
 	ProjectGUID="{991A563F-A27B-4E82-ACA6-63CB5DD96384}"
 	RootNamespace="template_runtime"
 	Keyword="Win32Proj"
@@ -385,24 +385,8 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\template_runtime.cu"
+				RelativePath=".\sumOfSquares.cu"
 				>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="Cudart Build Rule"
-						TargetMachinePlatform="1"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="Cudart Build Rule"
-						TargetMachinePlatform="1"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
