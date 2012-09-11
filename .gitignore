@@ -10,3 +10,8 @@
 *.lai
 *.la
 *.a
+/chapter03-App1OfCUDA/template_runtime/*.ncb
+/chapter03-App1OfCUDA/template_runtime/*.suo
+/chapter03-App1OfCUDA/template_runtime/*.user
+/chapter03-App1OfCUDA/template_runtime/*.opensdf
+/chapter03-App1OfCUDA/template_runtime/*.sdf
