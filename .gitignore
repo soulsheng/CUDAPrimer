@@ -19,3 +19,8 @@
 /chapter03-App1OfCUDA/sumOfSquares/*.suo
 /chapter03-App1OfCUDA/sumOfSquares/*.user
 /chapter03-App1OfCUDA/sumOfSquares/*.sdf
+/chapter03-App1OfCUDA/sumOfSquares/Debug
+/chapter03-App1OfCUDA/sumOfSquares/Win32
+/bin/win32/debug/*.ilk
+/bin/win32/debug/*.pdb
+/chapter03-App1OfCUDA/sumOfSquares/*.pdb
