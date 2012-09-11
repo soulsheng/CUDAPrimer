@@ -97,6 +97,28 @@ bool InitCUDA()
     return true;
 }
 
+#define DATA_SIZE 1048576
+
+int data[DATA_SIZE];
+
+void GenerateNumbers(int *number, int size)
+{
+    for(int i = 0; i < size; i++) {
+        number[i] = rand() % 10;
+    }
+}
+
+__global__ static void sumOfSquares(int *num, int* result)
+{
+    int sum = 0;
+    int i;
+    for(i = 0; i < DATA_SIZE; i++) {
+        sum += num[i] * num[i];
+    }
+
+    *result = sum;
+}
+
 int main(int argc, char **argv)
 {
 	//shrQAStart(argc, argv);
@@ -106,6 +128,29 @@ int main(int argc, char **argv)
 
     printf("CUDA initialized.\n");
 
+	 GenerateNumbers(data, DATA_SIZE);
+
+    int* gpudata, *result;
+    cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
+    cudaMalloc((void**) &result, sizeof(int));
+    cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
+
+	sumOfSquares<<<1, 1, 0>>>(gpudata, result);
+
+    int sum;
+    cudaMemcpy(&sum, result, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaFree(gpudata);
+    cudaFree(result);
+
+    printf("sum: %d\n", sum);
+
+	sum = 0;
+    for(int i = 0; i < DATA_SIZE; i++) {
+        sum += data[i] * data[i];
+    }
+    printf("sum (CPU): %d\n", sum);
+
+#if 0
     cout << "CUDA Runtime API template" << endl;
     cout << "=========================" << endl;
     cout << "Self-test started" << endl;
@@ -150,6 +195,6 @@ int main(int argc, char **argv)
 
     cout << "Memory deallocated successfully" << endl;
     cout << "TEST Results " << endl;
-    
+#endif  
     //shrQAFinishExit(argc, (const char **)argv, (bValid ? QA_PASSED : QA_FAILED));
 }
