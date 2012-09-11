@@ -1,0 +1,5 @@
+cudaGetDeviceProperties(∝, i)，∝ 改为 &prop；
+cudaMemcpy(∑, result, sizeof(int), cudaMemcpyDeviceToHost)，∑ 改为 &sum；
+
+思维发散：
+initCUDA：sdk例子template工程，gpuGetMaxGflopsDeviceId()计算GFLOPS；
