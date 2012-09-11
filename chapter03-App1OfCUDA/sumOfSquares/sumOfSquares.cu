@@ -17,7 +17,7 @@
 #include <string.h>
 #include <iostream>
 
-#include <shrQATest.h>
+//#include <shrQATest.h>
 
 using namespace std;
 
@@ -68,7 +68,7 @@ void processArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	shrQAStart(argc, argv);
+	//shrQAStart(argc, argv);
 
     cout << "CUDA Runtime API template" << endl;
     cout << "=========================" << endl;
@@ -115,5 +115,5 @@ int main(int argc, char **argv)
     cout << "Memory deallocated successfully" << endl;
     cout << "TEST Results " << endl;
     
-    shrQAFinishExit(argc, (const char **)argv, (bValid ? QA_PASSED : QA_FAILED));
+    //shrQAFinishExit(argc, (const char **)argv, (bValid ? QA_PASSED : QA_FAILED));
 }
