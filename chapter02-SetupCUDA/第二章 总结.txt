@@ -1,0 +1,6 @@
+
+1、基本上要写 CUDA 的程序，只需要安装 CUDA Toolkit 即可。不过 CUDA SDK 仍值得安装，因为里面的许多范例程序和链接库都相当有用。链接库值不值得用？比如：cutil。实验可以用，工程应用避免使用。
+
+2、下载地址：
+官网：http://developer.nvidia.com/cuda/cuda-downloads
+网盘：http://dl.vmall.com/c0bc1wm6va
