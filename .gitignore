@@ -25,3 +25,4 @@
 /bin/win32/debug/*.pdb
 /chapter03-App1OfCUDA/sumOfSquares/*.pdb
 /chapter03-App1OfCUDA/sumOfSquares/*.opensdf
+/chapter03-App1OfCUDA/sumOfSquares/ipch/sumofsquares_vs2010-5febf1b8/*.ipch
