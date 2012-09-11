@@ -108,15 +108,17 @@ void GenerateNumbers(int *number, int size)
     }
 }
 
-__global__ static void sumOfSquares(int *num, int* result)
+__global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
     int sum = 0;
     int i;
+	clock_t start = clock();
     for(i = 0; i < DATA_SIZE; i++) {
         sum += num[i] * num[i];
     }
 
     *result = sum;
+    *time = clock() - start;
 }
 
 int main(int argc, char **argv)
@@ -131,14 +133,18 @@ int main(int argc, char **argv)
 	 GenerateNumbers(data, DATA_SIZE);
 
     int* gpudata, *result;
+	clock_t* time;
     cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
     cudaMalloc((void**) &result, sizeof(int));
+    cudaMalloc((void**) &time, sizeof(clock_t));
     cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
 
-	sumOfSquares<<<1, 1, 0>>>(gpudata, result);
+	sumOfSquares<<<1, 1, 0>>>(gpudata, result, time);
 
     int sum;
+    clock_t time_used;
     cudaMemcpy(&sum, result, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&time_used, time, sizeof(clock_t), cudaMemcpyDeviceToHost);
     cudaFree(gpudata);
     cudaFree(result);
 
@@ -148,7 +154,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < DATA_SIZE; i++) {
         sum += data[i] * data[i];
     }
-    printf("sum (CPU): %d\n", sum);
+    printf("sum: %d time: %d\n", sum, time_used);
 
 #if 0
     cout << "CUDA Runtime API template" << endl;
