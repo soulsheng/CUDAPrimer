@@ -200,7 +200,7 @@ bool InitCUDA()
     return true;
 }
 
-#define DATA_SIZE 1048576
+#define DATA_SIZE (1<<20)//1048576
 
 int data[DATA_SIZE];
 
@@ -257,7 +257,8 @@ int main(int argc, char **argv)
     for(int i = 0; i < DATA_SIZE; i++) {
         sum += data[i] * data[i];
     }
-    printf("sum: %d time: %d\n", sum, time_used);
+    printf("sum: %d of %d squares\n", sum, DATA_SIZE);
+    printf("time: %d, time/n: %d\n", time_used, time_used/DATA_SIZE);
 
 #if 0
     cout << "CUDA Runtime API template" << endl;
@@ -306,4 +307,5 @@ int main(int argc, char **argv)
     cout << "TEST Results " << endl;
 #endif  
     //shrQAFinishExit(argc, (const char **)argv, (bValid ? QA_PASSED : QA_FAILED));
+	system("pause");
 }
