@@ -1,0 +1,9 @@
+[DEFAULT]
+BASEURL=http://dl.vmall.com/c0baiaobyi
+[{000214A0-0000-0000-C000-000000000046}]
+Prop3=19,2
+[InternetShortcut]
+URL=http://dl.vmall.com/c0baiaobyi
+IDList=
+IconFile=http://st1.dbank.com/netdisk/favicon.ico
+IconIndex=1

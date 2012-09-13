@@ -1,0 +1,10 @@
+[DEFAULT]
+BASEURL=http://dl.vmall.com/c0baiaobyi
+[{000214A0-0000-0000-C000-000000000046}]
+Prop3=19,2
+[InternetShortcut]
+URL=http://sdrv.ms/UM9M5b
+IDList=
+IconFile=C:\windows\system32\SHELL32.dll
+IconIndex=13
+HotKey=0
