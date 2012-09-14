@@ -217,13 +217,12 @@ void GenerateNumbers(int *number, int size)
 __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
 	const int tid = threadIdx.x;
-	const int size = DATA_SIZE / THREAD_NUM ;
-	int offset = tid * size;
+
     int sum = 0;
     int i;
 	clock_t start;
 	if(tid == 0) start = clock();
-    for(i = offset; i < size + offset; i++) {
+    for(i = tid; i < DATA_SIZE; i+= THREAD_NUM) {
         sum += num[i] * num[i];
     }
 
@@ -263,7 +262,7 @@ int main(int argc, char **argv)
         final_sum += sum[i] ;
     }
     printf("sum£¨GPU£©: %d\n", final_sum);
-    printf("time: %d, time/n: %d\n", time_used, time_used/DATA_SIZE);
+    printf("time: %d, time/n: %.2f\n", time_used, time_used*1.0f/DATA_SIZE);
 
 	final_sum = 0;
     for(int i = 0; i < DATA_SIZE; i++) {
