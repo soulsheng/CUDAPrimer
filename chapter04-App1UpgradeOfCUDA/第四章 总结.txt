@@ -8,7 +8,7 @@ Step02-Coalesce			第二步-内存的存取模式
 
 
 Step03-ParallelFurther		第三步-更多的并行化
-
+理论上 256 个 threads 最多只能隐藏 256 cycles 的 latency。但是 GPU 存取 global memory 时的 latency 可能高达 500 cycles 以上。如果增加 thread 数目，就可以看到更好的效率。
 
 Step04-syncthreads		第四步-Thread 的同步
 
