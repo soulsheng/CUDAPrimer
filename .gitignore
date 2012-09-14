@@ -26,3 +26,7 @@
 /chapter03-App1OfCUDA/sumOfSquares/*.pdb
 /chapter03-App1OfCUDA/sumOfSquares/*.opensdf
 /chapter03-App1OfCUDA/sumOfSquares/ipch/sumofsquares_vs2010-5febf1b8/*.ipch
+/chapter04-App1UpgradeOfCUDA/sumOfSquares/*.pdb
+/chapter04-App1UpgradeOfCUDA/sumOfSquares/Debug
+/chapter04-App1UpgradeOfCUDA/sumOfSquares/*.ncb
+/chapter04-App1UpgradeOfCUDA/sumOfSquares/*.user
