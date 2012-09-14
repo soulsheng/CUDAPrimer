@@ -31,6 +31,11 @@ bool g_bQATest = false;
 #define MAX(a,b) ((a > b) ? a : b)
 #endif
 
+#define DATA_SIZE (1<<20)//1048576
+#define THREAD_NUM   256
+
+int data[DATA_SIZE];
+
 #ifdef _WIN32
    #define STRCASECMP  _stricmp
    #define STRNCASECMP _strnicmp
@@ -200,9 +205,7 @@ bool InitCUDA()
     return true;
 }
 
-#define DATA_SIZE (1<<20)//1048576
 
-int data[DATA_SIZE];
 
 void GenerateNumbers(int *number, int size)
 {
@@ -213,15 +216,19 @@ void GenerateNumbers(int *number, int size)
 
 __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
+	const int tid = threadIdx.x;
+	const int size = DATA_SIZE / THREAD_NUM ;
+	int offset = tid * size;
     int sum = 0;
     int i;
-	clock_t start = clock();
-    for(i = 0; i < DATA_SIZE; i++) {
+	clock_t start;
+	if(tid == 0) start = clock();
+    for(i = offset; i < size + offset; i++) {
         sum += num[i] * num[i];
     }
 
-    *result = sum;
-    *time = clock() - start;
+    result[tid] = sum;
+    if(tid == 0) *time = clock() - start;
 }
 
 int main(int argc, char **argv)
@@ -238,27 +245,31 @@ int main(int argc, char **argv)
     int* gpudata, *result;
 	clock_t* time;
     cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
-    cudaMalloc((void**) &result, sizeof(int));
+    cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM );
     cudaMalloc((void**) &time, sizeof(clock_t));
     cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
 
-	sumOfSquares<<<1, 1, 0>>>(gpudata, result, time);
+	sumOfSquares<<<1, THREAD_NUM, 0>>>(gpudata, result, time);
 
-    int sum;
+    int sum[THREAD_NUM];
     clock_t time_used;
-    cudaMemcpy(&sum, result, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&sum, result, sizeof(int) * THREAD_NUM, cudaMemcpyDeviceToHost);
     cudaMemcpy(&time_used, time, sizeof(clock_t), cudaMemcpyDeviceToHost);
     cudaFree(gpudata);
     cudaFree(result);
 
-    printf("sum: %d\n", sum);
-
-	sum = 0;
-    for(int i = 0; i < DATA_SIZE; i++) {
-        sum += data[i] * data[i];
+	int final_sum = 0;
+    for(int i = 0; i < THREAD_NUM; i++) {
+        final_sum += sum[i] ;
     }
-    printf("sum: %d of %d squares\n", sum, DATA_SIZE);
+    printf("sum£¨GPU£©: %d\n", final_sum);
     printf("time: %d, time/n: %d\n", time_used, time_used/DATA_SIZE);
+
+	final_sum = 0;
+    for(int i = 0; i < DATA_SIZE; i++) {
+        final_sum += data[i] * data[i];
+    }
+    printf("sum£¨CPU£©: %d of %d squares\n", final_sum, DATA_SIZE);
 
 #if 0
     cout << "CUDA Runtime API template" << endl;
