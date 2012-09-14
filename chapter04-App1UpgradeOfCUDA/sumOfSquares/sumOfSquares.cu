@@ -222,7 +222,7 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 
     int sum = 0;
     int i;
-	
+	int offset = 1, mask = 1;
 	if(tid == 0) time[bid] = clock();
 	shared[tid] = 0;
     for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
@@ -231,13 +231,19 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 
 	__syncthreads();
 
-	if(tid == 0){
-		for(i=1;i< THREAD_NUM;i++)
-			shared[0] += shared[i];
-		result[bid] = shared[0];
-	}
+	 while(offset < THREAD_NUM) {
+        if((tid & mask) == 0) {
+            shared[tid] += shared[tid + offset];
+        }
+        offset += offset;
+        mask = offset + mask;
+        __syncthreads();
+    }
 
-    if(tid == 0) time[bid + BLOCK_NUM] = clock();
+	 if(tid == 0) {
+		 result[bid] = shared[0];
+		 time[bid + BLOCK_NUM] = clock();
+	 }
 }
 
 int main(int argc, char **argv)
