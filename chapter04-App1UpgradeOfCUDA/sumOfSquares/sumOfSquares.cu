@@ -220,9 +220,9 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 	const int tid = threadIdx.x;
 	const int bid = blockIdx.x;
 
-    int sum = 0;
+    
     int i;
-	int offset = 1, mask = 1;
+	int offset = 1;
 	if(tid == 0) time[bid] = clock();
 	shared[tid] = 0;
     for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
@@ -230,13 +230,12 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
     }
 
 	__syncthreads();
-
-	 while(offset < THREAD_NUM) {
-        if((tid & mask) == 0) {
+	offset = THREAD_NUM / 2;
+	 while(offset > 0) {
+        if(tid < offset) {
             shared[tid] += shared[tid + offset];
         }
-        offset += offset;
-        mask = offset + mask;
+        offset >>= 1;
         __syncthreads();
     }
 
@@ -288,7 +287,7 @@ int main(int argc, char **argv)
         if(max_end < time_used[i + BLOCK_NUM])
             max_end = time_used[i + BLOCK_NUM];
     }
-    printf("time: %d, time/n: %.2f\n", max_end - min_start, (max_end - min_start)*1.0f/DATA_SIZE);
+    printf("time: %d, time/n: %.4f\n", max_end - min_start, (max_end - min_start)*1.0f/DATA_SIZE);
 
 	final_sum = 0;
     for(int i = 0; i < DATA_SIZE; i++) {
