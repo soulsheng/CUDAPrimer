@@ -1,32 +1,91 @@
 
-Step05-UpgradeFurther		第五步-进一步改善
+Step05-UpgradeFurther		
+chapter04-App1UpgradeOfCUDA 
 -----------------------
+- 第四章第五步-进一步改善
 - 效率会变差的一个原因是，在这一版的程序中，最后加总的工作，只由每个 block 的 thread 0 来进行，但这并不是最有效率的方法。理论上，把 256 个数字加总的动作，是可以并行化的。最常见的方法，是透过树状的加法。
 - 上一个版本的树状加法是一般的写法，但是它在 GPU 上执行的时候，会有 share memory 的 bank conflict 的问题（详情在后面介绍 GPU 架构时会提到）
 如果还要再提高效率，可以把树状加法整个展开。
+- 优化树状加法，将树倒置。
+耗时：0.1273M t，比上一环节0.128提升1.005倍。
+- 优化树状加法进一步，把树状加法整个展开。
+耗时：0.1262M t，比上一环节0.1273提升1.01倍。
+- 最终耗时，0.1262M t， 比Step04的0.1280上升1.014倍；带宽达到：50.51G。
+			比Step03的0.1226下降0.971倍；带宽达到：50.51G。
+- 发现峰值：Step03-ParallelFurther
+耗时0.1226Mt，带宽52G。
 
-
-Step04-syncthreads		第四步-Thread 的同步
+Step04-syncthreads-tree		
+chapter04-App1UpgradeOfCUDA 
 -----------------------
-- 在 CPU 上执行的部份，需要的时间加长了（因为 CPU 现在需要加总 8192 个数字）。为了避免这个问题，我们可以让每个block把自己的每个thread的计算结果进行加总。由于在 GPU 上多做了一些动作，所以它的效率会比较差一些。
+- 第四章第四步-Thread 的同步
+在 CPU 上执行的部份，需要的时间加长了（因为 CPU 现在需要加总 8192 个数字）。为了避免这个问题，我们可以让每个block把自己的每个thread的计算结果进行加总。由于在 GPU 上多做了一些动作，所以它的效率会比较差一些。
+- 线程块内部，相加得到整块的和。耗时0.15M t，比上一环节降为0.8倍。
+- 线程块内部，采用树状加法。耗时0.128M t，比上一环节提升1.15倍。
+- 最终耗时，0.1280M t，比Step03的0.1226下降0.958倍；带宽降为0.958倍，达到：49.80G。
 
-
-Step03-ParallelFurther		第三步-更多的并行化
+Step03-ParallelFurther		
+chapter04-App1UpgradeOfCUDA 
 -----------------------
-- 理论上 256 个 threads 最多只能隐藏 256 cycles 的 latency。但是 GPU 存取 global memory 时的 latency 可能高达 500 cycles 以上。如果增加 thread 数目，就可以看到更好的效率。
+- 第四章第三步-更多的并行化
+理论上 256 个 threads 最多只能隐藏 256 cycles 的 latency。但是 GPU 存取 global memory 时的 latency 可能高达 500 cycles 以上。如果增加 thread 数目，就可以看到更好的效率。
+- block 块并行，
+耗时： 0.1226M t， 比上一环节提升20倍
+带宽提升20倍，达到：52G
 
-
-Step02-Coalesce			第二步-内存的存取模式
+Step02-Coalesce			
+chapter04-App1UpgradeOfCUDA 
 -----------------------
-- 
+- 第四章第二步-内存的存取模式
+耗时： 2.53M t， 比上一环节提升4倍
+带宽提升4倍，达到： 2.6G
 
-Step01-Parallel			第一步-程序的并行化
+
+Step01-Parallel			
+chapter04-App1UpgradeOfCUDA 
 -----------------------
-- 
+- 第四章第一步-程序的并行化
+1M个数耗时10M t， 速度提升67*67倍；
+带宽原先是： 数据量 * 频率/耗时周期数  = 4M * 1.62/0.67 = 9.7M
+提速后带宽是：648M
 
 
 第四章沿用第三章源码 
+chapter04-App1UpgradeOfCUDA 
 -----------------------
-- 
+- 直接拷贝第三章源码
 
+第三章 思维发散
+chapter03-App1OfCUDA 
+-----------------------
+- 估算gflops 每秒浮点运算次数，选择gflops最大的cuda设备。
+- gts 250 ： 207.36 gflops
+
+step03-timer
+chapter03-App1OfCUDA 
+-----------------------
+-	clock_t start = clock();
+    	...
+    	*time = clock() - start;
+
+step02-sumOfSquares
+chapter03-App1OfCUDA 
+-----------------------
+- 利用 CUDA 进行运算，求平方和
+
+step01-InitializeCUDAProject
+-----------------------
+- CUDA 的初始化
+- 使用SDK提供cuda工程模板template_runtime，快速新建一个新工程sumOfSquares
+
+chapter02-SetupCUDA
+-----------------------
+- 链接库值不值得用？比如：cutil。实验可以用，工程应用避免使用。
+
+chapter01-WhatIsCUDA
+-----------------------
+- 一个具有很少量执行单元的显示芯片，可能会把各个 block 中的 thread 顺序执行，而非同时执行。
+- 并行化执行的方式来隐藏内存的 latency的原理：
+当第一个 thread 需要等待内存读取结果时，则开始执行第二个 thread，依此类推。
+- 内存显存频繁交换数据影响效率的原因：由于 CPU 存取显卡内存时只能透过 PCI Express 接口，因此速度较慢（PCI Express x16 的理论带宽是双向各 4GB/s），因此不能太常进行这类动作，以免降低效率。
 
