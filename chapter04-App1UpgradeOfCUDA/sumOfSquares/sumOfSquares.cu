@@ -222,7 +222,7 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 
     
     int i;
-	int offset = 1;
+	
 	if(tid == 0) time[bid] = clock();
 	shared[tid] = 0;
     for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
