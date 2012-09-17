@@ -45,8 +45,24 @@ Step05-UpgradeFurther-tree	conflict 展开循环	0.1328M			1.20	（峰值）
 
 峰值：SStep05-UpgradeFurther-tree 累积提升：640/0.1328 = 4819
 
+理论上显卡的浮点计算能力FLOPS如何计算？
+f指：Shader频率，sm指SM的个数，sp指每个SM包含SP的个数，sf指每个SM包含SFU的个数
+统一估算公式： f × sm × ( sp × 2 + sf × 4) = f × sm*sp ×( 2 + sf / sp * 4 ) = f × n × c, c = 2 + sf / sp * 4 ；
+粗略估算公式： f × n × 2 ，只算sp的计算能力，忽略sf，sf大约额外贡献1/4~1/2的计算能力。
+—— 对于CUDA计算能力1.x，如Tesla架构的G8/G9/GT2系列：	 sf / sp = 2/8  = 1/4 , c = 3 
+—— 对于CUDA计算能力2.0，如Fermi架构的GF100系列：	 sf / sp = 4/32 = 1/8 , c = 2.5 
+—— 对于CUDA计算能力2.1，如Fermi架构的GF其他系列：	 sf / sp = 8/48 = 1/6 , c = 2.67
+—— 对于CUDA计算能力3.0，如Kepler架构的GK104系列：	 sf / sp = 32/192 = 1/6 , c = 2.67
+主版本号相同的设备基于相同的核心架构。Tesla架构的主版本号为1，Fermi架构的主版本号为2，Kepler架构的主版本号为3。
+参考：
+http://en.wikipedia.org/wiki/Comparison_of_Nvidia_graphics_processing_units#GeForce_300_Series
+http://en.wikipedia.org/wiki/Comparison_of_Nvidia_graphics_processing_units#GeForce_400_Series
+CUDA_C_Programming_Guide Section2.5
 
 发散思维：
 块数和线程数如何最优化设置？
 kernel局部变量对性能有多大影响？
 待分出branch进行实验。
+基于cuda的gpu算法相对cpu算法，耗费的时间减少了吗？cuda考虑传输时间和不考虑传输时间（模拟数据已经在显卡内存上）这两种情况下，分别加速百分之多少？
+理论上显卡的内存带宽是相当大的，NVIDIA的GeForce 8800GTX内存带宽是：86.4GB/s = 1.35G * 128 * 2 * 1/4 ；GTS250带宽：。
+峰值带宽计算方法参考：http://dl.acm.org/citation.cfm?id=1345220 （第4节）
