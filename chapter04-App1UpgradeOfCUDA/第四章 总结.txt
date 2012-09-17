@@ -44,3 +44,9 @@ Step04-syncthreads-tree		树状加法		0.1600M			0.92
 Step05-UpgradeFurther-tree	conflict 展开循环	0.1328M			1.20	（峰值）
 
 峰值：SStep05-UpgradeFurther-tree 累积提升：640/0.1328 = 4819
+
+
+发散思维：
+块数和线程数如何最优化设置？
+kernel局部变量对性能有多大影响？
+待分出branch进行实验。
