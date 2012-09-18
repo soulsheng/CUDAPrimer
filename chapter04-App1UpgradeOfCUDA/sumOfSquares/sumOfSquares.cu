@@ -32,8 +32,8 @@ bool g_bQATest = false;
 #endif
 
 #define DATA_SIZE (1<<20)//1048576
-#define THREAD_NUM   256
-#define BLOCK_NUM   32
+#define THREAD_NUM  (1<<8)
+#define BLOCK_NUM   981
 int data[DATA_SIZE];
 
 #ifdef _WIN32
@@ -216,42 +216,19 @@ void GenerateNumbers(int *number, int size)
 
 __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
-	extern __shared__ int shared[];
 	const int tid = threadIdx.x;
 	const int bid = blockIdx.x;
 
-    
-    int i;
-	
+	int sum = 0;
+	int i;
+
 	if(tid == 0) time[bid] = clock();
-	shared[tid] = 0;
-    for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
-        shared[tid] += num[i] * num[i];
-    }
+	for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
+		sum += num[i] * num[i];
+	}
 
-	__syncthreads();
-	
-	 if(tid < 128) { shared[tid] += shared[tid + 128]; }
-    __syncthreads();
-    if(tid < 64) { shared[tid] += shared[tid + 64]; }
-    __syncthreads();
-    if(tid < 32) { shared[tid] += shared[tid + 32]; }
-    __syncthreads();
-    if(tid < 16) { shared[tid] += shared[tid + 16]; }
-    __syncthreads();
-    if(tid < 8) { shared[tid] += shared[tid + 8]; }
-    __syncthreads();
-    if(tid < 4) { shared[tid] += shared[tid + 4]; }
-    __syncthreads();
-    if(tid < 2) { shared[tid] += shared[tid + 2]; }
-    __syncthreads();
-    if(tid < 1) { shared[tid] += shared[tid + 1]; }
-    __syncthreads();
-
-	 if(tid == 0) {
-		 result[bid] = shared[0];
-		 time[bid + BLOCK_NUM] = clock();
-	 }
+	result[tid + bid * THREAD_NUM] = sum;
+	if(tid == 0) time[bid + BLOCK_NUM] = clock();
 }
 
 int main(int argc, char **argv)
@@ -268,21 +245,21 @@ int main(int argc, char **argv)
     int* gpudata, *result;
 	clock_t* time;
     cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
-    cudaMalloc((void**) &result, sizeof(int) * BLOCK_NUM);
+    cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
     cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
     cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
 
-	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, THREAD_NUM * sizeof(int)>>>(gpudata, result, time);
+	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
 
-    int sum[BLOCK_NUM];
+    int sum[THREAD_NUM * BLOCK_NUM];
     clock_t time_used[BLOCK_NUM * 2];
-    cudaMemcpy(&sum, result, sizeof(int) * BLOCK_NUM , cudaMemcpyDeviceToHost);
+    cudaMemcpy(&sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
     cudaMemcpy(&time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
     cudaFree(gpudata);
     cudaFree(result);
 
 	int final_sum = 0;
-    for(int i = 0; i < BLOCK_NUM; i++) {
+    for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
         final_sum += sum[i] ;
     }
     printf("sum£¨GPU£©: %d\n", final_sum);

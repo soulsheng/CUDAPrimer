@@ -1,0 +1,49 @@
+
+一、gts250
+块数
+
+981	768	512	384	256	192	128	96	64	32	16	8	4	2	1
+0.1646	0.1571	0.1476	0.1469	0.1392	0.1345	0.1261	0.1271	0.1393	0.1234	0.1743	0.3291	0.6456	1.345	2.69
+									峰值？
+
+线程数
+
+1024	768	512	384	256	192	128	96	64	32	16	8	4	2	1
+不支持	不支持	0.1244	0.1241	0.1233	0.1317	0.1755	0.2215	0.3242	0.6232	1.241	2.565	4.963	9.900	19.81
+最多512？！				峰值？
+
+
+CUDA Device Query结果：
+
+Device 0: "GeForce GTS 250"
+  CUDA Driver Version:                           4.20
+  CUDA Runtime Version:                          3.20
+  CUDA Capability Major/Minor version number:    1.1
+  Total amount of global memory:                 1073741824 bytes
+  Multiprocessors x Cores/MP = Cores:            16 (MP) x 8 (Cores/MP) = 128 (Cores)
+  Total amount of constant memory:               65536 bytes
+  Total amount of shared memory per block:       16384 bytes
+  Total number of registers available per block: 8192
+  Warp size:                                     32
+  Maximum number of threads per block:           512
+  Maximum sizes of each dimension of a block:    512 x 512 x 64
+  Maximum sizes of each dimension of a grid:     65535 x 65535 x 1
+  Maximum memory pitch:                          2147483647 bytes
+  Texture alignment:                             256 bytes
+  Clock rate:                                    1.62 GHz
+  Concurrent copy and execution:                 Yes
+  Run time limit on kernels:                     No
+  Integrated:                                    No
+  Support host page-locked memory mapping:       Yes
+  Compute mode:                                  Default (multiple host threads can use this device simultaneously)
+  Concurrent kernel execution:                   No
+  Device has ECC support enabled:                No
+  Device is using TCC driver mode:               No	
+
+问题解答：
+1、线程数最多512？是的，硬件属性限制！	
+2、块数  最多981？是的，982以上崩溃，为什么？待查。
+3、块数峰值32？是的，为什么？
+4、线程数峰值256？是的，为什么？
+
+		
