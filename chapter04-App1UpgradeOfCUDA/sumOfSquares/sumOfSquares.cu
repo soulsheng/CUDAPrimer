@@ -33,7 +33,7 @@ bool g_bQATest = false;
 
 #define DATA_SIZE (1<<20)//1048576
 #define THREAD_NUM  (1<<8)
-#define BLOCK_NUM   981
+#define BLOCK_NUM   32
 int data[DATA_SIZE];
 
 #ifdef _WIN32
