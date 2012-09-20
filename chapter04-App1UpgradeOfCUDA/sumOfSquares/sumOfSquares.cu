@@ -32,8 +32,8 @@ bool g_bQATest = false;
 #endif
 
 #define DATA_SIZE (1<<20)//1048576
-#define THREAD_NUM  (1<<8)
-#define BLOCK_NUM   32
+int THREAD_NUM  = (1<<8);//256
+int BLOCK_NUM   = (1<<5);//32
 int data[DATA_SIZE];
 
 #ifdef _WIN32
@@ -214,7 +214,7 @@ void GenerateNumbers(int *number, int size)
     }
 }
 
-__global__ static void sumOfSquares(int *num, int* result, clock_t* time)
+__global__ static void sumOfSquares(int *num, int* result, clock_t* time, int tread_num, int block_num)
 {
 	const int tid = threadIdx.x;
 	const int bid = blockIdx.x;
@@ -223,12 +223,12 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 	int i;
 
 	if(tid == 0) time[bid] = clock();
-	for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
+	for(i = tid + bid * tread_num; i < DATA_SIZE; i+= tread_num * block_num) {
 		sum += num[i] * num[i];
 	}
 
-	result[tid + bid * THREAD_NUM] = sum;
-	if(tid == 0) time[bid + BLOCK_NUM] = clock();
+	result[tid + bid * tread_num] = sum;
+	if(tid == 0) time[bid + block_num] = clock();
 }
 
 int main(int argc, char **argv)
@@ -249,12 +249,12 @@ int main(int argc, char **argv)
     cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
     cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
 
-	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
+	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time, THREAD_NUM, BLOCK_NUM);
 
-    int sum[THREAD_NUM * BLOCK_NUM];
-    clock_t time_used[BLOCK_NUM * 2];
-    cudaMemcpy(&sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
-    cudaMemcpy(&time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
+    int *sum = new int[THREAD_NUM * BLOCK_NUM];
+    clock_t *time_used = new clock_t[BLOCK_NUM * 2];
+    cudaMemcpy(sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
+    cudaMemcpy(time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
     cudaFree(gpudata);
     cudaFree(result);
 
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
         final_sum += sum[i] ;
     }
     printf("sum£¨GPU£©: %d\n", final_sum);
+	delete[] sum;
 
 	clock_t min_start, max_end;
     min_start = time_used[0];
@@ -274,6 +275,7 @@ int main(int argc, char **argv)
             max_end = time_used[i + BLOCK_NUM];
     }
     printf("time: %d, time/n: %.4f\n", max_end - min_start, (max_end - min_start)*1.0f/DATA_SIZE);
+	delete[] time_used;
 
 	final_sum = 0;
     for(int i = 0; i < DATA_SIZE; i++) {
