@@ -300,6 +300,10 @@ void runCUDA()
 			size_block_best = BLOCK_NUM;
 	}
 
+	if ( THREAD_NUM * BLOCK_NUM == DATA_SIZE )
+	{
+		printf("每个线程计算一个元素。\n\n");
+	}
 }
 
 int main(int argc, char **argv)
