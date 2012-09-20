@@ -1,0 +1,57 @@
+一个SM 上的active warp 和active block 数量计算方法如下：
+
+（1）确定每个SM 使用的资源数量。
+
+方法一、使用nvcc 的--keep 编译选项，或者在工程属性-CUDA Runtime API-GPU中选择保留中间文件
+（keep preprocessed files），得到.cubin 文件。用写字板打开.cubin 文件，在每个内核函数的开
+始部分，可以看到以下几行：
+lmem = 0
+smem = 256
+reg = 8
+其中，lmem 和reg 分别代表内核函数中每个线程使用的local memory 数量和寄存器数量，
+smem 代表每个block 使用的shared memory 数量。以上数据告诉我们：这个内核函数的每个
+线程使用了0Byte local memory，8 个寄存器文件（每个寄存器文件的大小是32bit）；每个block
+使用了256Byte 的shared memory。
+方法一不适合cuda v4.2 。
+
+方法二、使用工具CUDA profiler，位于CUDA toolkit 安装目录的cudaprof\bin 目录中。
+图表分析之profiler output table，（6）内核函数的分析指标。
+“reg per thread”指每个线程用到的寄存器个数。
+分析前设置，勾选“Other options -> Kernel options -> registers per thread”；
+自动分析，输出可视化结果。如果提示“Invalid column...”，无法看到可视化结果，可以到exe所在目录下，
+打开cvs文件，regperthread就是该参数。
+对于gts250，这个数目是：8 。  occupancy是1，说明活动快达到最大8块。
+
+
+（2）根据硬件确定SM 上的可用资源。
+可以用SDK 中的deviceQuery 获得每个SM 中的资源。参考：《显卡影响CUDA性能的硬件属性》
+
+（3）计算每个block 使用的资源，并确定active block 和active warp 数量。
+假设每个block 中有64 个线程，每个block 使用256 Byte shared memory，8 个寄存器文
+件，那么就有：
+	每个block 使用的shared memory 是：256Byte。
+	每个block 使用的寄存器文件数量：8×64 = 512。
+	每个block 中的warp 数量：64/32 = 2。
+然后，根据每个block 使用的资源，就可以计算出由每个因素限制的最大active block 数
+量。这里，假设在G80/G92 GPU 中运行这个内核程序：
+	由shared memory 数量限制的active block 数量：16384/256 = 64。
+	由寄存器数量限制的active block 数量：8192/512 = 16。
+	由warp 数量限制的active block 数量： 24/2 = 12。
+   	每个SM 中的最大active block 数量：8。
+注意，在计算每个因素限制的active block 数量时如果发现有除不尽的情况，应该只取结
+果的整数部分。取上述计算结果中的最小值，可以知道每个SM 的active block 数量为8。
+
+对于gts250，在解决问题“sumOfSquares”时，1个block有256个线程，每个线程使用8个寄存器，每个block 使用0 Byte shared memory。
+那么就有：
+	每个block 使用的shared memory 是：0Byte。
+	每个block 使用的寄存器文件数量：8×256 = 2048。
+	每个block 中的warp 数量：256/32 = 8。
+然后，根据每个block 使用的资源，就可以计算出由每个因素限制的最大active block 数
+量。这里，假设在G80/G92 GPU 中运行这个内核程序：
+	由shared memory 数量限制的active block 数量：16384/0 = 无限制。
+	由寄存器数量限制的active block 数量：8192/2048 = 4。
+	由warp 数量限制的active block 数量： 24/8 = 3。
+   	每个SM 中的最大active block 数量：8。
+取上述计算结果中的最小值，可以知道每个SM 的active block 数量为3。
+
+下一考虑增大活动块数，看性能是否改进！
