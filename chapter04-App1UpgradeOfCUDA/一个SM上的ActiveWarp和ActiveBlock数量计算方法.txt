@@ -47,11 +47,50 @@ smem ´ú±íÃ¿¸öblock Ê¹ÓÃµÄshared memory ÊýÁ¿¡£ÒÔÉÏÊý¾Ý¸æËßÎÒÃÇ£ºÕâ¸öÄÚºËº¯ÊýµÄÃ¿¸
 	Ã¿¸öblock Ê¹ÓÃµÄ¼Ä´æÆ÷ÎÄ¼þÊýÁ¿£º8¡Á256 = 2048¡£
 	Ã¿¸öblock ÖÐµÄwarp ÊýÁ¿£º256/32 = 8¡£
 È»ºó£¬¸ù¾ÝÃ¿¸öblock Ê¹ÓÃµÄ×ÊÔ´£¬¾Í¿ÉÒÔ¼ÆËã³öÓÉÃ¿¸öÒòËØÏÞÖÆµÄ×î´óactive block Êý
-Á¿¡£ÕâÀï£¬¼ÙÉèÔÚG80/G92 GPU ÖÐÔËÐÐÕâ¸öÄÚºË³ÌÐò£º
+Á¿¡£ÕâÀï£¬ÔÚgts250 ÖÐÔËÐÐÕâ¸öÄÚºË³ÌÐò£º
 	ÓÉshared memory ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º16384/0 = ÎÞÏÞÖÆ¡£
 	ÓÉ¼Ä´æÆ÷ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º8192/2048 = 4¡£
 	ÓÉwarp ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º 24/8 = 3¡£
    	Ã¿¸öSM ÖÐµÄ×î´óactive block ÊýÁ¿£º8¡£
-È¡ÉÏÊö¼ÆËã½á¹ûÖÐµÄ×îÐ¡Öµ£¬¿ÉÒÔÖªµÀÃ¿¸öSM µÄactive block ÊýÁ¿Îª3¡£
+È¡ÉÏÊö¼ÆËã½á¹ûÖÐµÄ×îÐ¡Öµ£¬¿ÉÒÔÖªµÀÃ¿¸öSM µÄactive block ÊýÁ¿Îª3¡£ËùÒÔ¿éÊýÉèÎª£º3*16=48¡£
+ÊÂÊµÉÏ(Ïß³ÌÊý,¿éÊý)ÉèÎª(256,32)£¬ºÄÊ±£º0.1244£»
+ÖØÐÂÉè(Ïß³ÌÊý,¿éÊý)ÉèÎª(256,48)£¬ºÄÊ±£º0.1233£»
+
 
 ÏÂÒ»¿¼ÂÇÔö´ó»î¶¯¿éÊý£¬¿´ÐÔÄÜÊÇ·ñ¸Ä½ø£¡
+
+Ïß³ÌÊý¸ÄÎª128£¬
+ÄÇÃ´¾ÍÓÐ£º
+	Ã¿¸öblock Ê¹ÓÃµÄshared memory ÊÇ£º0Byte¡£
+	Ã¿¸öblock Ê¹ÓÃµÄ¼Ä´æÆ÷ÎÄ¼þÊýÁ¿£º8¡Á128 = 1024¡£
+	Ã¿¸öblock ÖÐµÄwarp ÊýÁ¿£º128/32 = 4¡£
+È»ºó£¬¸ù¾ÝÃ¿¸öblock Ê¹ÓÃµÄ×ÊÔ´£¬¾Í¿ÉÒÔ¼ÆËã³öÓÉÃ¿¸öÒòËØÏÞÖÆµÄ×î´óactive block Êý
+Á¿¡£ÕâÀï£¬ÔÚgts250 GPU ÖÐÔËÐÐÕâ¸öÄÚºË³ÌÐò£º
+	ÓÉshared memory ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º16384/0 = ÎÞÏÞÖÆ¡£
+	ÓÉ¼Ä´æÆ÷ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º8192/1024 = 8¡£
+	ÓÉwarp ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º 24/4 = 6¡£
+   	Ã¿¸öSM ÖÐµÄ×î´óactive block ÊýÁ¿£º8¡£
+È¡ÉÏÊö¼ÆËã½á¹ûÖÐµÄ×îÐ¡Öµ£¬¿ÉÒÔÖªµÀÃ¿¸öSM µÄactive block ÊýÁ¿Îª6¡£ËùÒÔ¿éÊýÉèÎª£º6*16 = 96 ¡£
+ÊÂÊµÉÏ(Ïß³ÌÊý,¿éÊý)ÉèÎª(256,32)£¬ºÄÊ±£º0.1254£»
+ÖØÐÂÉè(Ïß³ÌÊý,¿éÊý)ÉèÎª(128,64)£¬ºÄÊ±£º0.1246£» ½ÏÓÅ 
+
+Ïß³ÌÊý¸ÄÎª64£¬
+ÄÇÃ´¾ÍÓÐ£º
+	Ã¿¸öblock Ê¹ÓÃµÄshared memory ÊÇ£º0Byte¡£
+	Ã¿¸öblock Ê¹ÓÃµÄ¼Ä´æÆ÷ÎÄ¼þÊýÁ¿£º8¡Á64 = 512¡£
+	Ã¿¸öblock ÖÐµÄwarp ÊýÁ¿£º64/32 = 2¡£
+È»ºó£¬¸ù¾ÝÃ¿¸öblock Ê¹ÓÃµÄ×ÊÔ´£¬¾Í¿ÉÒÔ¼ÆËã³öÓÉÃ¿¸öÒòËØÏÞÖÆµÄ×î´óactive block Êý
+Á¿¡£ÕâÀï£¬ÔÚgts250 GPU ÖÐÔËÐÐÕâ¸öÄÚºË³ÌÐò£º
+	ÓÉshared memory ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º16384/0 = ÎÞÏÞÖÆ¡£
+	ÓÉ¼Ä´æÆ÷ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º8192/512 = 16¡£
+	ÓÉwarp ÊýÁ¿ÏÞÖÆµÄactive block ÊýÁ¿£º 24/2 = 12¡£
+   	Ã¿¸öSM ÖÐµÄ×î´óactive block ÊýÁ¿£º8¡£
+È¡ÉÏÊö¼ÆËã½á¹ûÖÐµÄ×îÐ¡Öµ£¬¿ÉÒÔÖªµÀÃ¿¸öSM µÄactive block ÊýÁ¿Îª8¡£ËùÒÔ¿éÊýÉèÎª£º8*16 = 128 ¡£
+ÊÂÊµÉÏ(Ïß³ÌÊý,¿éÊý)ÉèÎª(256,32)£¬ºÄÊ±£º0.1244£»
+ÖØÐÂÉè(Ïß³ÌÊý,¿éÊý)ÉèÎª(64,128)£¬ºÄÊ±£º0.1222£» ×îÓÅ 
+
+¿ÉÑ¡×îÓÅ£º
+(Ïß³ÌÊý,¿éÊý)ÉèÎª( 64, 128)
+(Ïß³ÌÊý,¿éÊý)ÉèÎª(128,  64)
+(Ïß³ÌÊý,¿éÊý)ÉèÎª(256,  32)
+(Ïß³ÌÊý,¿éÊý)ÉèÎª(512,  16)

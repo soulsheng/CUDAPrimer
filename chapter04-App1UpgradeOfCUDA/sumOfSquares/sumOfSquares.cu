@@ -16,7 +16,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
-
+#include <vector>
+#include <map>
+#include <fstream>
+using namespace std;
 //#include <shrQATest.h>
 #include <cuda_runtime.h>
 
@@ -40,9 +43,15 @@ int size_thread_max_per_block;//单个块最大线程数
 int size_block_max_per_dimention;//单个维度最大块数
 
 float time_cost_min=1000000.0f;
-int size_thread_best;
-int size_block_best;
 
+struct SizeThread
+{
+	int thread;
+	int block;
+	SizeThread(int t,int b):thread(t),block(b) {}
+};
+map<float, SizeThread>	timePerSizeThread;
+typedef map<float, SizeThread>::iterator SizeThreadMapItr;
 int data[DATA_SIZE];
 
 #ifdef _WIN32
@@ -289,16 +298,9 @@ void runCUDA()
 	printf("time: %d, time/n: %.4f\n", time_final, time_final_per_element);
 	delete[] time_used;
 
-	if( time_final_per_element < time_cost_min )
-	{
-		time_cost_min = time_final_per_element;
-		
-		if( size_thread_best!=THREAD_NUM )
-			size_thread_best = THREAD_NUM;
-		
-		if( size_block_best!=BLOCK_NUM )
-			size_block_best = BLOCK_NUM;
-	}
+	SizeThread sizeThread(THREAD_NUM, BLOCK_NUM);
+	timePerSizeThread.insert( make_pair(time_final_per_element, sizeThread) );
+	
 
 	if ( THREAD_NUM * BLOCK_NUM == DATA_SIZE )
 	{
@@ -317,49 +319,43 @@ int main(int argc, char **argv)
 
 	 GenerateNumbers(data, DATA_SIZE);
 
-	 printf(" 块数维持32，以32(warp的尺寸)为倍数变换线程数\n\n");
+
 	 int size_thread_init = int( log2((float)size_warp) );// i从log2(32) = 5开始
 	 int size_thread_end = int( log2((float)size_thread_max_per_block) );// i到log2(512) = 9结束
-	 BLOCK_NUM = 1 << 5;
+
+	 int size_block_init = int( log2((float)size_mp) );// i从log2(16) = 4开始
+	 int size_block_end = int( log2((float)size_block_max_per_dimention) ); // i 到 log2(64k) = 16结束
+
 	 for (int i= size_thread_init;i<=size_thread_end;i++) 
 	 {
 		 THREAD_NUM = 1 << i;	
-		 runCUDA();
-		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+		 for (int j=size_block_init;j<size_block_end;j++)
+		 {
+			 BLOCK_NUM = 1 << j;	
+			 runCUDA();
+			 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+		 }
 	 }
 
-	 for (int i=size_thread_init;i<size_thread_end-1;i++)
-	 {
-		 THREAD_NUM = (1 << i)*3;	
-		 runCUDA();
-		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
-	 }
-
-
-	 printf(" 线程数维持256，以16(mp的个数)为倍数变换块数\n\n");
-	 int size_block_init = int( log2((float)size_mp) );// i从log2(16) = 4开始
-	 int size_block_end = int( log2((float)size_block_max_per_dimention) ); // i 到 log2(64k) = 16结束
-	 THREAD_NUM = 1 << 8;
-	 for (int i=size_block_init;i<size_block_end;i++)
-	 {
-		 BLOCK_NUM = 1 << i;	
-		 runCUDA();
-		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
-	 }
-
-	 for (int i=size_block_init;i<size_block_end-1;i++)
-	 {
-		 BLOCK_NUM = (1 << i)*3;	
-		 runCUDA();
-		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
-	 }
-
+	 int i=0;
 	 printf(" 找出最优化的块数和线程数，进行运算。\n\n");
-	 printf(" best size of thread = %d\n\n", size_thread_best);
-	 printf(" best size of block = %d\n\n", size_block_best);
-	 BLOCK_NUM = size_block_best;
-	 THREAD_NUM = size_thread_best;
-	 runCUDA();
+	 for (SizeThreadMapItr itr=timePerSizeThread.begin(); itr != timePerSizeThread.end(); itr++ ,i++)
+	 {
+		 printf(" %d : time of (thread,block) = (%d, %d) is %.4f\n", i, itr->second.thread,itr->second.block, itr->first);
+	 }
+	 
+	 //FILE *fp = fopen("timePerSizeThread.txt", "rw+");
+	 fstream file;
+	 file.open( "timePerSizeThread.txt", ios_base::out | ios_base::trunc );
+
+	 i=0;
+	 printf(" 找出最优化的块数和线程数，进行运算。\n\n");
+	 for (SizeThreadMapItr itr=timePerSizeThread.begin(); itr != timePerSizeThread.end(); itr++ ,i++)
+	 {
+		 file << i << ":  time of (thread,block) = (" << itr->second.thread << ", " << itr->second.block
+			 << ") is " << itr->first << endl;
+	 }
+	 file.close();
 
 	 // cpu计算
 	 int final_sum = 0;
@@ -367,52 +363,6 @@ int main(int argc, char **argv)
 		 final_sum += data[i] * data[i];
 	 }
 	 printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
-#if 0
-    cout << "CUDA Runtime API template" << endl;
-    cout << "=========================" << endl;
-    cout << "Self-test started" << endl;
 
-    const int N = 100;
-
-    processArgs(argc, argv);
-
-    int *d_ptr;
-    ASSERT(cudaSuccess == cudaMalloc    (&d_ptr, N * sizeof(int)), "Device allocation of " << N << " ints failed", -1);
-
-    int *h_ptr;
-    ASSERT(cudaSuccess == cudaMallocHost(&h_ptr, N * sizeof(int)), "Host allocation of "   << N << " ints failed", -1);
-
-    cout << "Memory allocated successfully" << endl;
-
-    dim3 cudaBlockSize(32,1,1);
-    dim3 cudaGridSize((N + cudaBlockSize.x - 1) / cudaBlockSize.x, 1, 1);
-    sequence_gpu<<<cudaGridSize, cudaBlockSize>>>(d_ptr, N);
-    ASSERT(cudaSuccess == cudaGetLastError(), "Kernel launch failed", -1);
-    ASSERT(cudaSuccess == cudaDeviceSynchronize(), "Kernel synchronization failed", -1);
-
-    sequence_cpu(h_ptr, N);
-
-    cout << "CUDA and CPU algorithm implementations finished" << endl;
-
-    int *h_d_ptr;
-    ASSERT(cudaSuccess == cudaMallocHost(&h_d_ptr, N * sizeof(int)), "Host allocation of " << N << " ints failed", -1);
-    ASSERT(cudaSuccess == cudaMemcpy(h_d_ptr, d_ptr, N * sizeof(int), cudaMemcpyDeviceToHost), "Copy of " << N << " ints from device to host failed", -1);
-    bool bValid = true;
-    for (int i=0; i<N && bValid; i++)
-    {
-        if (h_ptr[i] != h_d_ptr[i])
-        {
-            bValid = false;
-        }
-    }
-
-    ASSERT(cudaSuccess == cudaFree(d_ptr),       "Device deallocation failed", -1);
-    ASSERT(cudaSuccess == cudaFreeHost(h_ptr),   "Host deallocation failed",   -1);
-    ASSERT(cudaSuccess == cudaFreeHost(h_d_ptr), "Host deallocation failed",   -1);
-
-    cout << "Memory deallocated successfully" << endl;
-    cout << "TEST Results " << endl;
-#endif  
-    //shrQAFinishExit(argc, (const char **)argv, (bValid ? QA_PASSED : QA_FAILED));
 	system("pause");
 }
