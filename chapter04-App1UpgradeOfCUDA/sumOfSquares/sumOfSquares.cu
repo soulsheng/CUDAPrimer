@@ -34,6 +34,15 @@ bool g_bQATest = false;
 #define DATA_SIZE (1<<20)//1048576
 int THREAD_NUM  = (1<<8);//256
 int BLOCK_NUM   = (1<<5);//32
+int size_warp;//warp线程束的尺寸，即一个束包含多少个线程
+int size_mp;//多处理器MultiProcessor的个数
+int size_thread_max_per_block;//单个块最大线程数
+int size_block_max_per_dimention;//单个维度最大块数
+
+float time_cost_min=1000000.0f;
+int size_thread_best;
+int size_block_best;
+
 int data[DATA_SIZE];
 
 #ifdef _WIN32
@@ -161,7 +170,15 @@ int gpuGetMaxGflopsDeviceId(float& fGFLOPS)
 			{
 				max_compute_perf  = compute_perf;
 				max_perf_device   = current_device;
-				printf("sp核数：%d, shader频率: %d \n", deviceProp.multiProcessorCount * sm_per_multiproc, deviceProp.clockRate);
+				size_warp = deviceProp.warpSize;
+				size_mp = deviceProp.multiProcessorCount;
+				size_thread_max_per_block = deviceProp.maxThreadsPerBlock;
+				size_block_max_per_dimention = deviceProp.maxGridSize[0];
+				printf("cuda设备关键属性如下：\n");
+				printf("warp尺寸：%d, shader频率: %d \n", size_warp, deviceProp.clockRate);
+				printf("mp个数：%d, 每个mp所含sp个数：%d, sp核数: %d \n", size_mp, sm_per_multiproc, size_mp * sm_per_multiproc);
+				printf("单个块最大线程数：%d \n", size_thread_max_per_block);
+				printf("单个维度最大块数：%d \n", size_block_max_per_dimention);
 			}
 		}
 		++current_device;
@@ -214,6 +231,7 @@ void GenerateNumbers(int *number, int size)
     }
 }
 
+
 __global__ static void sumOfSquares(int *num, int* result, clock_t* time, int tread_num, int block_num)
 {
 	const int tid = threadIdx.x;
@@ -231,6 +249,59 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time, int tr
 	if(tid == 0) time[bid + block_num] = clock();
 }
 
+void runCUDA()
+{
+
+	int* gpudata, *result;
+	clock_t* time;
+	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
+	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
+	cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
+	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
+
+	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time, THREAD_NUM, BLOCK_NUM);
+
+	int *sum = new int[THREAD_NUM * BLOCK_NUM];
+	clock_t *time_used = new clock_t[BLOCK_NUM * 2];
+	cudaMemcpy(sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
+	cudaMemcpy(time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
+	cudaFree(gpudata);
+	cudaFree(result);
+
+	int final_sum = 0;
+	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
+		final_sum += sum[i] ;
+	}
+	printf("sum（GPU）: %d\n", final_sum);
+	delete[] sum;
+
+	clock_t min_start, max_end;
+	min_start = time_used[0];
+	max_end = time_used[BLOCK_NUM];
+	for(int i = 1; i < BLOCK_NUM; i++) {
+		if(min_start > time_used[i])
+			min_start = time_used[i];
+		if(max_end < time_used[i + BLOCK_NUM])
+			max_end = time_used[i + BLOCK_NUM];
+	}
+	int time_final = max_end - min_start;
+	float time_final_per_element = time_final*1.0f/DATA_SIZE;
+	printf("time: %d, time/n: %.4f\n", time_final, time_final_per_element);
+	delete[] time_used;
+
+	if( time_final_per_element < time_cost_min )
+	{
+		time_cost_min = time_final_per_element;
+		
+		if( size_thread_best!=THREAD_NUM )
+			size_thread_best = THREAD_NUM;
+		
+		if( size_block_best!=BLOCK_NUM )
+			size_block_best = BLOCK_NUM;
+	}
+
+}
+
 int main(int argc, char **argv)
 {
 	//shrQAStart(argc, argv);
@@ -238,51 +309,60 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    printf("CUDA initialized.\n");
+    printf("CUDA initialized.\n\n");
 
 	 GenerateNumbers(data, DATA_SIZE);
 
-    int* gpudata, *result;
-	clock_t* time;
-    cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
-    cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
-    cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
-    cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
+	 printf(" 块数维持32，以32(warp的尺寸)为倍数变换线程数\n\n");
+	 int size_thread_init = int( log2((float)size_warp) );// i从log2(32) = 5开始
+	 int size_thread_end = int( log2((float)size_thread_max_per_block) );// i到log2(512) = 9结束
+	 BLOCK_NUM = 1 << 5;
+	 for (int i= size_thread_init;i<=size_thread_end;i++) 
+	 {
+		 THREAD_NUM = 1 << i;	
+		 runCUDA();
+		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+	 }
 
-	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time, THREAD_NUM, BLOCK_NUM);
+	 for (int i=size_thread_init;i<size_thread_end-1;i++)
+	 {
+		 THREAD_NUM = (1 << i)*3;	
+		 runCUDA();
+		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+	 }
 
-    int *sum = new int[THREAD_NUM * BLOCK_NUM];
-    clock_t *time_used = new clock_t[BLOCK_NUM * 2];
-    cudaMemcpy(sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
-    cudaMemcpy(time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
-    cudaFree(gpudata);
-    cudaFree(result);
 
-	int final_sum = 0;
-    for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
-        final_sum += sum[i] ;
-    }
-    printf("sum（GPU）: %d\n", final_sum);
-	delete[] sum;
+	 printf(" 线程数维持256，以16(mp的个数)为倍数变换块数\n\n");
+	 int size_block_init = int( log2((float)size_mp) );// i从log2(16) = 4开始
+	 int size_block_end = int( log2((float)size_block_max_per_dimention) ); // i 到 log2(64k) = 16结束
+	 THREAD_NUM = 1 << 8;
+	 for (int i=size_block_init;i<size_block_end;i++)
+	 {
+		 BLOCK_NUM = 1 << i;	
+		 runCUDA();
+		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+	 }
 
-	clock_t min_start, max_end;
-    min_start = time_used[0];
-    max_end = time_used[BLOCK_NUM];
-    for(int i = 1; i < BLOCK_NUM; i++) {
-        if(min_start > time_used[i])
-            min_start = time_used[i];
-        if(max_end < time_used[i + BLOCK_NUM])
-            max_end = time_used[i + BLOCK_NUM];
-    }
-    printf("time: %d, time/n: %.4f\n", max_end - min_start, (max_end - min_start)*1.0f/DATA_SIZE);
-	delete[] time_used;
+	 for (int i=size_block_init;i<size_block_end-1;i++)
+	 {
+		 BLOCK_NUM = (1 << i)*3;	
+		 runCUDA();
+		 printf(" THREAD_NUM = %d , BLOCK_NUM = %d\n\n", THREAD_NUM, BLOCK_NUM);
+	 }
 
-	final_sum = 0;
-    for(int i = 0; i < DATA_SIZE; i++) {
-        final_sum += data[i] * data[i];
-    }
-    printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
+	 printf(" 找出最优化的块数和线程数，进行运算。\n\n");
+	 printf(" best size of thread = %d\n\n", size_thread_best);
+	 printf(" best size of block = %d\n\n", size_block_best);
+	 BLOCK_NUM = size_block_best;
+	 THREAD_NUM = size_thread_best;
+	 runCUDA();
 
+	 // cpu计算
+	 int final_sum = 0;
+	 for(int i = 0; i < DATA_SIZE; i++) {
+		 final_sum += data[i] * data[i];
+	 }
+	 printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
 #if 0
     cout << "CUDA Runtime API template" << endl;
     cout << "=========================" << endl;
