@@ -20,8 +20,10 @@ using namespace std;
 
 #include <cuda_runtime.h>
 
+#include <cutil.h>
+#include <cutil_inline_runtime.h>   
 
-#define DATA_SIZE (1<<25)//1048576
+#define DATA_SIZE (1<<20)//1048576
 #define THREAD_NUM  (1<<6)//64
 #define BLOCK_NUM    (1<<7)//128
 
@@ -126,31 +128,29 @@ int main(int argc, char **argv)
 	// 数据初始化
 	GenerateNumbers(data, DATA_SIZE);
 
-	// 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》三、cudaEventElapsedTime
-	float Event_Time;
-	cudaEvent_t start,stop;
+	// 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
+	unsigned int hTimer ;
+	cutCreateTimer(&hTimer);
 
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-
-	cudaEventRecord(start, 0);
+	cutilDeviceSynchronize() ;
+	cutStartTimer(hTimer) ;
 
 	// cuda计算
 	runCUDA();
 
-	cudaDeviceSynchronize();
-	cudaEventRecord(stop, 0);
-	cudaEventElapsedTime(&Event_Time, start, stop);
-	printf("time（GPU）: %.3f ms\n", Event_Time);
+	cutilDeviceSynchronize() ;
+	cutStopTimer(hTimer) ;
 
-	cudaEventRecord(start, 0);
+	double Passed_Time = cutGetTimerValue(hTimer);
+
+	printf("time（GPU）: %.3f ms\n", Passed_Time);
+
 
 	// cpu计算
 	runCPU();
 
-	cudaEventRecord(stop, 0);
-	cudaEventElapsedTime(&Event_Time, start, stop);
-	printf("time（CPU）: %.3f ms\n", Event_Time);
+
+	cutDeleteTimer(hTimer);
 
 	system("pause");
 }
