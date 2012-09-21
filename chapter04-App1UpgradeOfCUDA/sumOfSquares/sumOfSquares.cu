@@ -23,7 +23,7 @@ using namespace std;
 #include <cutil.h>
 #include <cutil_inline_runtime.h>   
 
-#define DATA_SIZE (1<<20)//1048576
+#define DATA_SIZE (1<<26)//1048576
 #define THREAD_NUM  (1<<6)//64
 #define BLOCK_NUM    (1<<7)//128
 
@@ -32,6 +32,20 @@ int data[DATA_SIZE];
 
 // 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
 unsigned int hTimer ;
+void timeBegin()
+{
+	cutilDeviceSynchronize() ;
+	cutStartTimer(hTimer) ;
+}
+void timeEnd(string msg)
+{
+	cutilDeviceSynchronize() ;
+	cutStopTimer(hTimer) ;
+
+	double Passed_Time = cutGetTimerValue(hTimer);
+
+	printf("time（%s）: %.3f ms\n", msg.c_str(), Passed_Time);
+}
 
 bool InitCUDA()
 {
@@ -91,25 +105,38 @@ __global__ static void sumOfSquares(int *num, int* result)
 
 void runCUDA()
 {
-
+#if 1
+	//timeBegin();
 	int* gpudata, *result;
 	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
 	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
 	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
+	//timeEnd("cuda Memcpy Host To Device");
+#endif
 
+#if 1
+	//timeBegin();
 	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result);
+	//timeEnd("kernel");
+#endif
 
+#if 1
+	//timeBegin();
 	int sum[THREAD_NUM * BLOCK_NUM];
 	cudaMemcpy( &sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
 	cudaFree(gpudata);
 	cudaFree(result);
+	//timeEnd("cuda Memcpy Device To Host");
+#endif
 
+#if 1
+	//timeBegin();
 	int final_sum = 0;
 	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
 		final_sum += sum[i] ;
 	}
-	//printf("sum（GPU）: %d of %d squares\n", final_sum, DATA_SIZE);
-
+	//timeEnd("cpu add further");
+#endif
 }
 
 void runCPU()
@@ -119,20 +146,6 @@ void runCPU()
 		 final_sum += data[i] * data[i];
 	 }
 	// printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
-}
-void timeBegin()
-{
-	cutilDeviceSynchronize() ;
-	cutStartTimer(hTimer) ;
-}
-void timeEnd(string msg)
-{
-	cutilDeviceSynchronize() ;
-	cutStopTimer(hTimer) ;
-
-	double Passed_Time = cutGetTimerValue(hTimer);
-
-	printf("time（%s）: %.3f ms\n", msg.c_str(), Passed_Time);
 }
 
 int main(int argc, char **argv)
