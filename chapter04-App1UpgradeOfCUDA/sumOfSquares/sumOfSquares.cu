@@ -186,5 +186,5 @@ int main(int argc, char **argv)
 
 	cutDeleteTimer(hTimer);
 
-	system("pause");
+	//system("pause");
 }
