@@ -37,7 +37,7 @@
 			/>
 			<Tool
 				Name="Cudart Build Rule"
-				Include="../../../shared/inc"
+				Include="../../../shared/inc;..\..\dependence\include"
 				Arch3="30"
 				HostDebugInfo="true"
 				Optimization="0"
@@ -75,10 +75,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cudart.lib"
+				AdditionalDependencies="cudart.lib cutil32d.lib"
 				OutputFile="../../bin/win32/$(ConfigurationName)/$(ProjectName).exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(CUDA_PATH)/lib/$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(CUDA_PATH)/lib/$(PlatformName)&quot;;..\..\dependence\lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -205,7 +205,7 @@
 			/>
 			<Tool
 				Name="Cudart Build Rule"
-				Include="../../../shared/inc"
+				Include="../../../shared/inc;..\..\dependence\include"
 				Arch3="30"
 				PtxAsOptionV="true"
 				Runtime="0"
@@ -242,10 +242,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cudart.lib"
+				AdditionalDependencies="cudart.lib cutil32.lib"
 				OutputFile="../../bin/win32/$(ConfigurationName)/$(ProjectName).exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="$(CUDA_PATH)/lib/$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(CUDA_PATH)/lib/$(PlatformName)&quot;;..\..\dependence\lib"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
