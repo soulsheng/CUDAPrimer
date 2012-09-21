@@ -36,6 +36,7 @@ void timeBegin()
 {
 	cutilDeviceSynchronize() ;
 	cutStartTimer(hTimer) ;
+	cutResetTimer(hTimer);
 }
 void timeEnd(string msg)
 {
@@ -105,23 +106,23 @@ __global__ static void sumOfSquares(int *num, int* result)
 
 void runCUDA()
 {
-#if 1
-	//timeBegin();
+#if 1//95ms 95%
+	timeBegin(); 
 	int* gpudata, *result;
 	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
 	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
 	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
-	//timeEnd("cuda Memcpy Host To Device");
+	timeEnd("cuda Memcpy Host To Device");
 #endif
 
-#if 1
-	//timeBegin();
+#if 1//5ms 5%
+	timeBegin(); 
 	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result);
-	//timeEnd("kernel");
+	timeEnd("kernel");
 #endif
 
-#if 1
-	//timeBegin();
+#if 1//3ms 3%
+	//timeBegin(); 
 	int sum[THREAD_NUM * BLOCK_NUM];
 	cudaMemcpy( &sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
 	cudaFree(gpudata);
@@ -129,7 +130,7 @@ void runCUDA()
 	//timeEnd("cuda Memcpy Device To Host");
 #endif
 
-#if 1
+#if 1//0.02ms 0%
 	//timeBegin();
 	int final_sum = 0;
 	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
