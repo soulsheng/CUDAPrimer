@@ -30,6 +30,9 @@ using namespace std;
 
 int data[DATA_SIZE];
 
+// 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
+unsigned int hTimer ;
+
 bool InitCUDA()
 {
     int count;
@@ -117,6 +120,20 @@ void runCPU()
 	 }
 	// printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
 }
+void timeBegin()
+{
+	cutilDeviceSynchronize() ;
+	cutStartTimer(hTimer) ;
+}
+void timeEnd(string msg)
+{
+	cutilDeviceSynchronize() ;
+	cutStopTimer(hTimer) ;
+
+	double Passed_Time = cutGetTimerValue(hTimer);
+
+	printf("time（%s）: %.3f ms\n", msg.c_str(), Passed_Time);
+}
 
 int main(int argc, char **argv)
 {
@@ -128,22 +145,13 @@ int main(int argc, char **argv)
 	// 数据初始化
 	GenerateNumbers(data, DATA_SIZE);
 
-	// 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
-	unsigned int hTimer ;
 	cutCreateTimer(&hTimer);
 
-	cutilDeviceSynchronize() ;
-	cutStartTimer(hTimer) ;
-
+	timeBegin();
 	// cuda计算
 	runCUDA();
-
-	cutilDeviceSynchronize() ;
-	cutStopTimer(hTimer) ;
-
-	double Passed_Time = cutGetTimerValue(hTimer);
-
-	printf("time（GPU）: %.3f ms\n", Passed_Time);
+	timeEnd("CUDA");
+	
 
 
 	// cpu计算
