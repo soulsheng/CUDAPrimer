@@ -1,0 +1,10 @@
+# CUDA_PROFILE_LOG_VERSION 2.0
+# CUDA_DEVICE 0 GeForce GTS 250
+# CUDA_CONTEXT 1
+# CUDA_PROFILE_CSV 1
+# TIMESTAMPFACTOR 12b522ca14f94355
+method,gputime,cputime,regperthread,occupancy,gld_incoherent,gld_coherent,gst_incoherent,gst_coherent
+memcpyHtoD,1052.416,1147.176
+_Z12sumOfSquaresPiS_Pl,84.128,194.929,6,0.667,0,8192,32,320
+memcpyDtoH,4.384,112.338
+memcpyDtoH,10.144,100.439
