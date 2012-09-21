@@ -23,7 +23,7 @@ using namespace std;
 #include <cutil.h>
 #include <cutil_inline_runtime.h>   
 
-#define DATA_SIZE (1<<26)//1048576
+#define DATA_SIZE (1<<20)//1048576
 #define THREAD_NUM  (1<<6)//64
 #define BLOCK_NUM    (1<<7)//128
 
@@ -121,38 +121,23 @@ __global__ static void sumOfSquares(int *num, int* result)
 
 void runCUDA()
 {
-#if 1//95ms 95%
-	//timeBegin(); 
 	int* gpudata, *result;
 	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
 	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
 	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
-	//timeEnd("cuda Memcpy Host To Device");
-#endif
 
-#if 1//5ms 5%
-	//timeBegin(); 
 	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result);
-	//timeEnd("kernel");
-#endif
 
-#if 1//3ms 3%
-	//timeBegin(); 
 	int sum[THREAD_NUM * BLOCK_NUM];
 	cudaMemcpy( &sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
 	cudaFree(gpudata);
 	cudaFree(result);
-	//timeEnd("cuda Memcpy Device To Host");
-#endif
 
-#if 1//0.02ms 0%
-	//timeBegin();
 	int final_sum = 0;
 	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
 		final_sum += sum[i] ;
 	}
-	//timeEnd("cpu add further");
-#endif
+
 }
 
 void runCPU()
@@ -176,21 +161,12 @@ int main(int argc, char **argv)
 
 	cutCreateTimer(&hTimer);
 
-	timeBegin();
-	for(int i= 0;i<TIMES_REPERT;i++){
-		// cuda计算
-		runCUDA();
-	}
-	timeEnd("CUDA");
 	
-
-
-	timeBegin();
-	for(int i= 0;i<TIMES_REPERT;i++){
-		// cpu计算
-		runCPU();
-	}
-	timeEnd("CPU");
+	// cuda计算
+	runCUDA();
+	
+	// cpu计算
+	runCPU();
 
 
 	cutDeleteTimer(hTimer);
