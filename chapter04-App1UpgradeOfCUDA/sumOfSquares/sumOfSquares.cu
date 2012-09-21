@@ -27,6 +27,7 @@ using namespace std;
 #define THREAD_NUM  (1<<6)//64
 #define BLOCK_NUM    (1<<7)//128
 
+#define TIMES_REPERT	(1<<0)
 
 int data[DATA_SIZE];
 
@@ -44,6 +45,20 @@ void timeEnd(string msg)
 	cutStopTimer(hTimer) ;
 
 	double Passed_Time = cutGetTimerValue(hTimer);
+
+	printf("time（%s）: %.3f ms\n", msg.c_str(), Passed_Time);
+}
+
+clock_t clockBegin,clockEnd;
+void timeBeginCPU()
+{
+	clockBegin = clock();
+}
+void timeEndCPU(string msg)
+{
+	clockEnd = clock();
+
+	double Passed_Time = clockEnd - clockBegin;
 
 	printf("time（%s）: %.3f ms\n", msg.c_str(), Passed_Time);
 }
@@ -107,18 +122,18 @@ __global__ static void sumOfSquares(int *num, int* result)
 void runCUDA()
 {
 #if 1//95ms 95%
-	timeBegin(); 
+	//timeBegin(); 
 	int* gpudata, *result;
 	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
 	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
 	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
-	timeEnd("cuda Memcpy Host To Device");
+	//timeEnd("cuda Memcpy Host To Device");
 #endif
 
 #if 1//5ms 5%
-	timeBegin(); 
+	//timeBegin(); 
 	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result);
-	timeEnd("kernel");
+	//timeEnd("kernel");
 #endif
 
 #if 1//3ms 3%
@@ -146,7 +161,7 @@ void runCPU()
 	 for(int i = 0; i < DATA_SIZE; i++) {
 		 final_sum += data[i] * data[i];
 	 }
-	// printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
+	//printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
 }
 
 int main(int argc, char **argv)
@@ -162,14 +177,20 @@ int main(int argc, char **argv)
 	cutCreateTimer(&hTimer);
 
 	timeBegin();
-	// cuda计算
-	runCUDA();
+	for(int i= 0;i<TIMES_REPERT;i++){
+		// cuda计算
+		runCUDA();
+	}
 	timeEnd("CUDA");
 	
 
 
-	// cpu计算
-	runCPU();
+	timeBegin();
+	for(int i= 0;i<TIMES_REPERT;i++){
+		// cpu计算
+		runCPU();
+	}
+	timeEnd("CPU");
 
 
 	cutDeleteTimer(hTimer);
