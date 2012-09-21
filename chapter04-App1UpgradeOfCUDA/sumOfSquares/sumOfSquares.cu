@@ -21,7 +21,7 @@ using namespace std;
 #include <cuda_runtime.h>
 
 
-#define DATA_SIZE (1<<20)//1048576
+#define DATA_SIZE (1<<25)//1048576
 #define THREAD_NUM  (1<<6)//64
 #define BLOCK_NUM    (1<<7)//128
 
@@ -103,7 +103,7 @@ void runCUDA()
 	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
 		final_sum += sum[i] ;
 	}
-	printf("sum（GPU）: %d of %d squares\n", final_sum, DATA_SIZE);
+	//printf("sum（GPU）: %d of %d squares\n", final_sum, DATA_SIZE);
 
 }
 
@@ -113,25 +113,44 @@ void runCPU()
 	 for(int i = 0; i < DATA_SIZE; i++) {
 		 final_sum += data[i] * data[i];
 	 }
-	 printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
+	// printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
 }
 
 int main(int argc, char **argv)
 {
 	// 初始化cuda
-	 if(!InitCUDA()) {
-        return 0;
-    }
+	if(!InitCUDA()) {
+		return 0;
+	}
 
-	 // 数据初始化
-	 GenerateNumbers(data, DATA_SIZE);
+	// 数据初始化
+	GenerateNumbers(data, DATA_SIZE);
 
-	 // cuda计算
-	 runCUDA();
+	// 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》三、cudaEventElapsedTime
+	float Event_Time;
+	cudaEvent_t start,stop;
 
-	 // cpu计算
-	 runCPU();
-	 
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+	cudaEventRecord(start, 0);
+
+	// cuda计算
+	runCUDA();
+
+	cudaDeviceSynchronize();
+	cudaEventRecord(stop, 0);
+	cudaEventElapsedTime(&Event_Time, start, stop);
+	printf("time（GPU）: %.3f ms\n", Event_Time);
+
+	cudaEventRecord(start, 0);
+
+	// cpu计算
+	runCPU();
+
+	cudaEventRecord(stop, 0);
+	cudaEventElapsedTime(&Event_Time, start, stop);
+	printf("time（CPU）: %.3f ms\n", Event_Time);
 
 	system("pause");
 }
