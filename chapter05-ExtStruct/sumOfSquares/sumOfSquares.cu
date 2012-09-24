@@ -23,12 +23,21 @@ using namespace std;
 #include <cutil.h>
 #include <cutil_inline_runtime.h>   
 
-#define DATA_SIZE (1<<20)//1048576
+#include "modifyVertexByJoint.cuh"
+#include "StructMS3D.h"
+
+#define DATA_SIZE (1<<16)//64k 个点
+#define ATTRIB_SIZE		(1<<6)//64 个骨骼
+
 #define THREAD_NUM  (1<<7)//128
 #define BLOCK_NUM    ((1<<4)*6)//96
 
 #define TIMES_REPERT	(1<<0)
-int data[DATA_SIZE];
+
+
+Ms3dVertexArrayElement pVertexArray[DATA_SIZE];
+Ms3dVertexArrayElement pVertexArrayBackup[DATA_SIZE];
+DMs3dJoint	pJoints[ATTRIB_SIZE];
 
 // 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
 unsigned int hTimer ;
@@ -102,7 +111,92 @@ void GenerateNumbers(int *number, int size)
     }
 }
 
+__device__
+void deviceTransformVetex(float* pos, float* mat)
+{
+	float* m_fMat = mat;
 
+	float x = pos[0] * m_fMat[0] + 
+		pos[1] * m_fMat[4] +
+		pos[2] * m_fMat[8] + 
+		m_fMat[12] ;
+
+	float y = pos[0] * m_fMat[1] + 
+		pos[1] * m_fMat[5] + 
+		pos[2] * m_fMat[9] + 
+		m_fMat[13] ;
+
+	float z = pos[0] * m_fMat[2] + 
+		pos[1] * m_fMat[6] + 
+		pos[2] * m_fMat[10]+
+		m_fMat[14] ;
+
+	pos[0] = x;
+	pos[1] = y;
+	pos[2] = z;
+
+}
+__global__ void modifyVertexByJointInGPUKernel( Ms3dVertexArrayElement* pVertexArray, Ms3dVertexArrayElement* pVertexArrayBackup, 
+	DMs3dJoint * pJoints, int nTriangleIndices , clock_t* time )
+{
+	int loop1 = __mul24(blockIdx.x,blockDim.x) + threadIdx.x;
+
+	if ( loop1 >= nTriangleIndices )
+	{
+		return;
+	}
+
+	const int tid = threadIdx.x;
+	const int bid = blockIdx.x;
+	if(tid == 0) time[bid] = clock();
+
+	Ms3dVertexArrayElement* pVert = NULL;
+	Ms3dVertexArrayElement* pVertBackup = NULL;
+	int nIdBone = 0;
+
+	// 遍历三角面的三个顶点 
+
+	// 第1个点
+	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3));
+	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3));
+
+		pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
+		pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
+		pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
+
+	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
+
+	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
+
+	// 第2个点
+	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3 + 1));
+	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3 + 1));
+
+	pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
+	pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
+	pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
+
+	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
+
+	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
+
+
+	// 第3个点
+	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3 + 2));
+	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3 + 2));
+
+	pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
+	pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
+	pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
+
+	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
+
+	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
+   
+	if(tid == 0) time[bid + BLOCK_NUM] = clock();
+
+}
+#if 0
 __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
 	const int tid = threadIdx.x;
@@ -118,29 +212,43 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 	result[tid + bid * THREAD_NUM] = sum;
     if(tid == 0) time[bid + BLOCK_NUM] = clock();
 }
+#endif
+//Round a / b to nearest higher integer value
+int iDivUp(int a, int b){
+    return (a % b != 0) ? (a / b + 1) : (a / b);
+}
+
+// compute grid and thread block size for a given number of elements
+void computeGridSize(int n, int blockSize, int &numBlocks, int &numThreads)
+{
+    numThreads = min(blockSize, n);
+    numBlocks = iDivUp(n, numThreads);
+}
 
 void runCUDA()
 {
-	int* gpudata, *result;
+	void *dVert, *dVertBackup, *dJoint;
 	clock_t* time;
 	cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
-	cudaMalloc((void**) &gpudata, sizeof(int) * DATA_SIZE);
-	cudaMalloc((void**) &result, sizeof(int) * THREAD_NUM * BLOCK_NUM);
-	cudaMemcpy(gpudata, data, sizeof(int) * DATA_SIZE, cudaMemcpyHostToDevice);
+	cudaMalloc((void**) &dVert, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
+	cudaMalloc((void**) &dVertBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
+	cudaMalloc((void**) &dJoint, sizeof(DMs3dJoint) * ATTRIB_SIZE);
+	cudaMemcpy(dVert, pVertexArray, sizeof(Ms3dVertexArrayElement) * DATA_SIZE, cudaMemcpyHostToDevice);
+	cudaMemcpy(dVertBackup, pVertexArrayBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE, cudaMemcpyHostToDevice);
+	cudaMemcpy(dJoint, pJoints, sizeof(DMs3dJoint) * ATTRIB_SIZE, cudaMemcpyHostToDevice);
 
-	sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
+	//sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
+	int numThreads, numBlocks;
+    computeGridSize(DATA_SIZE, 256, numBlocks, numThreads);
+	modifyVertexByJointInGPUKernel<<< numBlocks, numThreads >>>
+		( pVertexArray, pVertexArrayBackup, pJoints, DATA_SIZE, time);
 
-	int sum[THREAD_NUM * BLOCK_NUM];
+	
     clock_t time_used[BLOCK_NUM * 2];
     cudaMemcpy(&time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
-	cudaMemcpy( &sum, result, sizeof(int) * THREAD_NUM * BLOCK_NUM , cudaMemcpyDeviceToHost);
-	cudaFree(gpudata);
-	cudaFree(result);
-
-	int final_sum = 0;
-	for(int i = 0; i < BLOCK_NUM * THREAD_NUM; i++) {
-		final_sum += sum[i] ;
-	}
+	cudaFree(dVert);
+	cudaFree(dVertBackup);
+	cudaFree(dJoint);
 
 	clock_t min_start, max_end;
     min_start = time_used[0];
@@ -156,11 +264,13 @@ void runCUDA()
 
 void runCPU()
 {
+#if 0
 	int final_sum = 0;
 	 for(int i = 0; i < DATA_SIZE; i++) {
 		 final_sum += data[i] * data[i];
 	 }
 	//printf("sum（CPU）: %d of %d squares\n", final_sum, DATA_SIZE);
+#endif
 }
 
 int main(int argc, char **argv)
@@ -171,7 +281,7 @@ int main(int argc, char **argv)
 	}
 
 	// 数据初始化
-	GenerateNumbers(data, DATA_SIZE);
+	//GenerateNumbers(data, DATA_SIZE);
 
 	cutCreateTimer(&hTimer);
 
