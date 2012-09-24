@@ -26,14 +26,16 @@ using namespace std;
 #include "modifyVertexByJoint.cuh"
 #include "StructMS3D.h"
 
-#define DATA_SIZE (1<<16)//64k 个点
-#define ATTRIB_SIZE		(1<<6)//64 个骨骼
+#define DATA_SIZE		(1<<16)//64k 个点
+//#define DATA_SIZE		((1<<10)*24)//24k 个点
+#define ATTRIB_SIZE		(1<<6)	//64 个骨骼
 
-#define THREAD_NUM  (1<<7)//128
-#define BLOCK_NUM    ((1<<4)*6)//96
+//#define THREAD_NUM  (1<<7)//128
+//#define BLOCK_NUM    ((1<<4)*6)//96
 
 #define TIMES_REPERT	(1<<0)
 
+int THREAD_NUM, BLOCK_NUM;
 
 Ms3dVertexArrayElement pVertexArray[DATA_SIZE];
 Ms3dVertexArrayElement pVertexArrayBackup[DATA_SIZE];
@@ -193,7 +195,7 @@ __global__ void modifyVertexByJointInGPUKernel( Ms3dVertexArrayElement* pVertexA
 
 	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
    
-	if(tid == 0) time[bid + BLOCK_NUM] = clock();
+	if(tid == 0) time[bid + gridDim.x] = clock();
 
 }
 #if 0
@@ -238,14 +240,13 @@ void runCUDA()
 	cudaMemcpy(dJoint, pJoints, sizeof(DMs3dJoint) * ATTRIB_SIZE, cudaMemcpyHostToDevice);
 
 	//sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
-	int numThreads, numBlocks;
-    computeGridSize(DATA_SIZE, 256, numBlocks, numThreads);
-	modifyVertexByJointInGPUKernel<<< numBlocks, numThreads >>>
+    computeGridSize(DATA_SIZE, 256, BLOCK_NUM, THREAD_NUM);
+	modifyVertexByJointInGPUKernel<<< BLOCK_NUM, THREAD_NUM >>>
 		( pVertexArray, pVertexArrayBackup, pJoints, DATA_SIZE, time);
 
 	
-    clock_t time_used[BLOCK_NUM * 2];
-    cudaMemcpy(&time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
+    clock_t *time_used = new clock_t[BLOCK_NUM * 2];
+    cudaMemcpy(time_used, time, sizeof(clock_t) * BLOCK_NUM * 2, cudaMemcpyDeviceToHost);
 	cudaFree(dVert);
 	cudaFree(dVertBackup);
 	cudaFree(dJoint);
@@ -259,6 +260,7 @@ void runCUDA()
         if(max_end < time_used[i + BLOCK_NUM])
             max_end = time_used[i + BLOCK_NUM];
     }
+	delete []time_used;
     printf("time: %d, time/n: %.4f\n", max_end - min_start, (max_end - min_start)*1.0f/DATA_SIZE);
 }
 
