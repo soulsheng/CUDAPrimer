@@ -28,7 +28,6 @@ using namespace std;
 #define BLOCK_NUM    (1<<7)//128
 
 #define TIMES_REPERT	(1<<0)
-#define COUNT_REG		(1<<1)
 int data[DATA_SIZE];
 
 // 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
@@ -108,16 +107,12 @@ __global__ static void sumOfSquares(int *num, int* result, clock_t* time)
 {
 	const int tid = threadIdx.x;
 	const int bid = blockIdx.x;
-	int testReg[COUNT_REG];
-	for(int j= 0;j< COUNT_REG;j++)
-	{
-		testReg[j] = 1;
-	}
-	int sum = 0;
+	
+	int sum ;
 	int i;
 	if(tid == 0) time[bid] = clock();
 	for(i = tid + bid * THREAD_NUM; i < DATA_SIZE; i+= THREAD_NUM * BLOCK_NUM) {
-		sum += num[i] * num[i] * testReg[i%COUNT_REG];
+		sum += num[i] * num[i] ;
 	}
 
 	result[tid + bid * THREAD_NUM] = sum;
