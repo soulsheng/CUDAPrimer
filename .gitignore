@@ -38,3 +38,14 @@
 /chapter04-App1UpgradeOfCUDA/sumOfSquares/Win32
 /chapter04-App1UpgradeOfCUDA/sumOfSquares/*.suo
 /chapter04-App1UpgradeOfCUDA/sumOfSquares/Release
+/chapter05-ExtStruct/sumOfSquares/ipch
+/chapter05-ExtStruct/sumOfSquares/Win32
+/chapter05-ExtStruct/sumOfSquares/*.opensdf
+/chapter05-ExtStruct/sumOfSquares/*.pdb
+/chapter05-ExtStruct/sumOfSquares/*.suo
+/chapter05-ExtStruct/sumOfSquares/*.sdf
+/chapter05-ExtStruct/sumOfSquares/*.suo
+/chapter05-ExtStruct/sumOfSquares/*.suo
+/chapter05-ExtStruct/sumOfSquares/Debug
+/chapter05-ExtStruct/sumOfSquares/*.ncb
+/chapter05-ExtStruct/sumOfSquares/Release
