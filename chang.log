@@ -1,4 +1,11 @@
 
+CUDAPrimer 0.469, 2012-09-24 
+----------------------- 
+- 两种查看每个线程的寄存器使用量的方法：
+方法一：开启编译选项： --ptxas-options=-v，查看编译日志： $(IntDir)/工程名字.log；
+方法二：CUDA Visual Profiler 分析exe，通过exe目录下csv文件，regperthread字段代表寄存器使用量。
+- 获取最优化线程数目配置，通过由cuda sdk提供的计算工具CUDA_Occupancy_Calculator.xls 。
+
 
 CUDAPrimer 0.468, 2012-09-21 
 ----------------------- 
