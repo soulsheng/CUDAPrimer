@@ -24,8 +24,8 @@ using namespace std;
 #include <cutil_inline_runtime.h>   
 
 #define DATA_SIZE (1<<20)//1048576
-#define THREAD_NUM  (1<<6)//64
-#define BLOCK_NUM    (1<<7)//128
+#define THREAD_NUM  (1<<7)//128
+#define BLOCK_NUM    ((1<<4)*6)//96
 
 #define TIMES_REPERT	(1<<0)
 int data[DATA_SIZE];
