@@ -268,9 +268,10 @@ int main(int argc, char **argv)
 
 	cutCreateTimer(&hTimer);
 
-	
+	timeBegin();
 	// cudaº∆À„
 	runCUDA();
+	timeEnd("cuda");
 	
 	// cpuº∆À„
 	runCPU();
