@@ -26,7 +26,7 @@ using namespace std;
 #include "modifyVertexByJoint.cuh"
 #include "StructMS3D.h"
 
-#define DATA_SIZE		(1<<16)//64k 个点
+#define DATA_SIZE		(1<<13)//8k 个面片
 //#define DATA_SIZE		((1<<10)*24)//24k 个点
 #define ATTRIB_SIZE		(1<<6)	//64 个骨骼
 
@@ -37,8 +37,8 @@ using namespace std;
 
 int THREAD_NUM, BLOCK_NUM;
 
-Ms3dVertexArrayElement pVertexArray[DATA_SIZE];
-Ms3dVertexArrayElement pVertexArrayBackup[DATA_SIZE];
+Ms3dVertexArrayElement pVertexArray[DATA_SIZE*3];
+Ms3dVertexArrayElement pVertexArrayBackup[DATA_SIZE*3];
 DMs3dJoint	pJoints[ATTRIB_SIZE];
 
 // 测时方法参考：http://soulshengbbs.sinaapp.com/thread-12-1-1.html 《cuda测量时间的方法汇总》二、cutGetTimerValue
@@ -106,10 +106,11 @@ bool InitCUDA()
 
 
 
-void GenerateNumbers(int *number, int size)
+void GenerateNumbers(Ms3dVertexArrayElement *pVert, int size)
 {
-    for(int i = 0; i < size; i++) {
-        number[i] = rand() % 10;
+	float *pVertFloat = (float *)pVert;
+    for(int i = 0; i < size * sizeof(Ms3dVertexArrayElement)/sizeof(float); i++) {
+        pVertFloat[i] = rand() % 100;
     }
 }
 
@@ -138,7 +139,7 @@ void deviceTransformVetex(float* pos, float* mat)
 	pos[2] = z;
 
 }
-__global__ void modifyVertexByJointInGPUKernel( Ms3dVertexArrayElement* pVertexArray, Ms3dVertexArrayElement* pVertexArrayBackup, 
+__global__ void modifyVertexByJointInGPUKernel( float* pVertexArray, float* pVertexArrayBackup, 
 	DMs3dJoint * pJoints, int nTriangleIndices , clock_t* time )
 {
 	int loop1 = __mul24(blockIdx.x,blockDim.x) + threadIdx.x;
@@ -151,50 +152,28 @@ __global__ void modifyVertexByJointInGPUKernel( Ms3dVertexArrayElement* pVertexA
 	const int tid = threadIdx.x;
 	const int bid = blockIdx.x;
 	if(tid == 0) time[bid] = clock();
-
-	Ms3dVertexArrayElement* pVert = NULL;
-	Ms3dVertexArrayElement* pVertBackup = NULL;
-	int nIdBone = 0;
-
+	
 	// 遍历三角面的三个顶点 
+	for(int z = 0; z < 3; z++)
+	{
+		int vertexCnt = 9 * (loop1 * 3 + z);
 
-	// 第1个点
-	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3));
-	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3));
-
+		Ms3dVertexArrayElement* pVert = (Ms3dVertexArrayElement*)(pVertexArray + vertexCnt);
+		Ms3dVertexArrayElement* pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + vertexCnt);
+		
 		pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
 		pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
 		pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
 
-	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
+		int nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
+		if(nIdBone != -1)
+		{			
+			DMs3dJoint * pJoint = &pJoints[ nIdBone];
 
-	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
+			deviceTransformVetex( pVert->m_vVert, pJoint->m_matFinal );
+		}
+	}
 
-	// 第2个点
-	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3 + 1));
-	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3 + 1));
-
-	pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
-	pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
-	pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
-
-	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
-
-	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
-
-
-	// 第3个点
-	pVert = (Ms3dVertexArrayElement*)(pVertexArray + 9 * (loop1 * 3 + 2));
-	pVertBackup = (Ms3dVertexArrayElement*)(pVertexArrayBackup + 9 * (loop1 * 3 + 2));
-
-	pVert->m_vVert[0] = pVertBackup->m_vVert[0] ;
-	pVert->m_vVert[1] = pVertBackup->m_vVert[1] ;
-	pVert->m_vVert[2] = pVertBackup->m_vVert[2] ;
-
-	nIdBone = (int)( pVertBackup->m_fBone + 0.5f );
-
-	nIdBone == -1? 1: deviceTransformVetex( pVert->m_vVert, pJoints[ nIdBone].m_matFinal );
-   
 	if(tid == 0) time[bid + gridDim.x] = clock();
 
 }
@@ -234,16 +213,16 @@ void runCUDA()
    computeGridSize(DATA_SIZE, 256, BLOCK_NUM, THREAD_NUM);
 
 	cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
-	cudaMalloc((void**) &dVert, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
-	cudaMalloc((void**) &dVertBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
+	cudaMalloc((void**) &dVert, sizeof(Ms3dVertexArrayElement) * DATA_SIZE*3);
+	cudaMalloc((void**) &dVertBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE*3);
 	cudaMalloc((void**) &dJoint, sizeof(DMs3dJoint) * ATTRIB_SIZE);
-	cudaMemcpy(dVert, pVertexArray, sizeof(Ms3dVertexArrayElement) * DATA_SIZE, cudaMemcpyHostToDevice);
-	cudaMemcpy(dVertBackup, pVertexArrayBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE, cudaMemcpyHostToDevice);
+	cudaMemcpy(dVert, pVertexArray, sizeof(Ms3dVertexArrayElement) * DATA_SIZE*3, cudaMemcpyHostToDevice);
+	cudaMemcpy(dVertBackup, pVertexArrayBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE*3, cudaMemcpyHostToDevice);
 	cudaMemcpy(dJoint, pJoints, sizeof(DMs3dJoint) * ATTRIB_SIZE, cudaMemcpyHostToDevice);
 
 	//sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
 	modifyVertexByJointInGPUKernel<<< BLOCK_NUM, THREAD_NUM >>>
-		( pVertexArray, pVertexArrayBackup, pJoints, DATA_SIZE, time);
+		( (float*)pVertexArray, (float*)pVertexArrayBackup, pJoints, DATA_SIZE, time);
 
 	
     clock_t *time_used = new clock_t[BLOCK_NUM * 2];
@@ -284,7 +263,8 @@ int main(int argc, char **argv)
 	}
 
 	// 数据初始化
-	//GenerateNumbers(data, DATA_SIZE);
+	GenerateNumbers(pVertexArray, DATA_SIZE*3);
+	GenerateNumbers(pVertexArrayBackup, DATA_SIZE*3);
 
 	cutCreateTimer(&hTimer);
 
