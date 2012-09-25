@@ -231,6 +231,8 @@ void runCUDA()
 {
 	void *dVert, *dVertBackup, *dJoint;
 	clock_t* time;
+   computeGridSize(DATA_SIZE, 256, BLOCK_NUM, THREAD_NUM);
+
 	cudaMalloc((void**) &time, sizeof(clock_t) * BLOCK_NUM * 2);
 	cudaMalloc((void**) &dVert, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
 	cudaMalloc((void**) &dVertBackup, sizeof(Ms3dVertexArrayElement) * DATA_SIZE);
@@ -240,7 +242,6 @@ void runCUDA()
 	cudaMemcpy(dJoint, pJoints, sizeof(DMs3dJoint) * ATTRIB_SIZE, cudaMemcpyHostToDevice);
 
 	//sumOfSquares<<<BLOCK_NUM, THREAD_NUM, 0>>>(gpudata, result, time);
-    computeGridSize(DATA_SIZE, 256, BLOCK_NUM, THREAD_NUM);
 	modifyVertexByJointInGPUKernel<<< BLOCK_NUM, THREAD_NUM >>>
 		( pVertexArray, pVertexArrayBackup, pJoints, DATA_SIZE, time);
 
