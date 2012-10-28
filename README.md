@@ -1,6 +1,9 @@
 参考教程：《深入浅出谈CUDA》 网页文本和PPT详见：
-http://www.cppblog.com/hktk/category/11855.html 
+
+http://www.cppblog.com/hktk/category/11855.html
+
 http://sdrv.ms/PYC1u0 
+
 
 CUDAPrimer 0.469, 2012-09-24 ----------------------- 
 - 两种查看每个线程的寄存器使用量的方法：方法一：开启编译选项： --ptxas-options=-v，查看编译日志： $(IntDir)/工程名字.log；方法二：CUDA Visual Profiler 分析exe，通过exe目录下csv文件，regperthread字段代表寄存器使用量。
