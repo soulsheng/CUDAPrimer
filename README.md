@@ -81,4 +81,5 @@ CUDAPrimer 0.11, 2012-09-11 -----------------------
 - 第一章总结- 一个具有很少量执行单元的显示芯片，可能会把各个 block 中的 thread 顺序执行，而非同时执行。- 并行化执行的方式来隐藏内存的 latency的原理：当第一个 thread 需要等待内存读取结果时，则开始执行第二个 thread，依此类推。- 内存显存频繁交换数据影响效率的原因：由于 CPU 存取显卡内存时只能透过 PCI Express 接口，因此速度较慢（PCI Express x16 的理论带宽是双向各 4GB/s），因此不能太常进行这类动作，以免降低效率。
 
 CUDAPrimer 0.10, 2012-09-11 -----------------------
-- 选择教程：深入浅出谈CUDA，http://www.pcinlife.com/article/graphics/2008-06-04/1212575164d532.html版本编号规范参考：https://github.com/soulsheng/drupal/blob/7.x/CHANGELOG.txt
+- 选择教程：《深入浅出谈CUDA》 详见：http://www.cppblog.com/hktk/category/11855.html
+- 版本编号规范参考：https://github.com/soulsheng/drupal/blob/7.x/CHANGELOG.txt
