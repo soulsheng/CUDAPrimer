@@ -1,8 +1,8 @@
-参考教程：《深入浅出谈CUDA》 网页文本和PPT详见：
+参考教程：《深入浅出谈CUDA》 网页和Word文档详见：
 
 http://www.cppblog.com/hktk/category/11855.html
 
-http://sdrv.ms/PYC1u0 
+http://sdrv.ms/SkhzZ2  
 
 
 CUDAPrimer 0.469, 2012-09-24 ----------------------- 
